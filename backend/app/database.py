@@ -1,6 +1,13 @@
+from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.config import settings
+
+# Ensure SQLite parent directory exists before engine creation
+if "sqlite:///" in settings.DATABASE_URL:
+    db_raw_path = settings.DATABASE_URL.split("sqlite:///", 1)[1]
+    if db_raw_path and db_raw_path != ":memory:":
+        Path(db_raw_path).parent.mkdir(parents=True, exist_ok=True)
 
 # SQLite configuration with thread-safety and WAL mode for concurrent FastAPI requests
 engine = create_engine(

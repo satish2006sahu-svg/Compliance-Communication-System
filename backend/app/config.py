@@ -37,8 +37,13 @@ class Settings(BaseSettings):
     MEMENTO_STORAGE_DIR: str = os.getenv("MEMENTO_STORAGE_DIR", str(BASE_DIR / "data" / "memento"))
     MEMENTO_EMBEDDING_PROVIDER: str = os.getenv("MEMENTO_EMBEDDING_PROVIDER", "deterministic") # "openai", "sentence-transformers", or "deterministic"
     
-    # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"]
+    # CORS Settings
+    CORS_ORIGINS: list[str] = [
+        o.strip() for o in os.getenv(
+            "CORS_ORIGINS", 
+            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,http://127.0.0.1:8000"
+        ).split(",") if o.strip()
+    ]
     
     class Config:
         env_file = str(BASE_DIR / ".env")

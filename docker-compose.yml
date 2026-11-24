@@ -1,0 +1,35 @@
+services:
+  regucomply:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: regucomply-system
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-replace-with-a-random-32-byte-hex-string-for-production}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      - FIRECRAWL_BASE_URL=${FIRECRAWL_BASE_URL:-https://api.firecrawl.dev}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.8-flash}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - DATABASE_URL=sqlite:////app/backend/data/compliance.db
+      - MEMENTO_STORAGE_DIR=/app/backend/data/memento
+      - MEMENTO_EMBEDDING_PROVIDER=deterministic
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+    volumes:
+      # Persistent storage for SQLite database and Memento memory graphs
+      - regucomply-data:/app/backend/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  regucomply-data:
+    driver: local
