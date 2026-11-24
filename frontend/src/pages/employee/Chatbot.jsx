@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 import { 
   Send, 
   Sparkles, 
@@ -220,7 +221,11 @@ export default function Chatbot({ initialQuery }) {
                 )}
 
                 {/* Content */}
-                <div className="whitespace-pre-wrap font-sans">{msg.content}</div>
+                {isUser ? (
+                  <div className="whitespace-pre-wrap font-sans">{msg.content}</div>
+                ) : (
+                  <MarkdownRenderer content={msg.content} />
+                )}
 
                 {/* Memento Context Badge on Assistant */}
                 {msg.mementoMemoryUsed && (

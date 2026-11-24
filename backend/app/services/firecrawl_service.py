@@ -46,18 +46,28 @@ class FirecrawlService:
         if hostname.lower() in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
             raise HTTPException(status_code=400, detail="Access to localhost / loopback addresses is blocked for security.")
         
-        # Resolve hostname to check for private or reserved IPs
+        # Resolve hostname to check for private or reserved IPs (IPv4 & IPv6)
         try:
-            ip_str = socket.gethostbyname(hostname)
-            ip_obj = ipaddress.ip_address(ip_str)
-            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved:
+            addr_info = socket.getaddrinfo(hostname, None)
+            if not addr_info:
                 raise HTTPException(
                     status_code=400, 
-                    detail=f"Security alert: The target host '{hostname}' ({ip_str}) resolves to a private or internal network address, which is prohibited."
+                    detail=f"Could not resolve host '{hostname}'. Please provide a valid public URL."
                 )
+            for _, _, _, _, sockaddr in addr_info:
+                ip_str = sockaddr[0]
+                ip_obj = ipaddress.ip_address(ip_str)
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Security alert: The target host '{hostname}' ({ip_str}) resolves to a private or internal network address, which is prohibited."
+                    )
         except socket.gaierror:
-            # Let Firecrawl attempt resolution or report failure if DNS lookup fails locally
-            pass
+            # If hostname cannot be resolved, reject immediately for safety
+            raise HTTPException(
+                status_code=400,
+                detail=f"DNS resolution failed for target host '{hostname}'. Please provide a reachable public regulatory website URL."
+            )
 
     def scrape_url(self, url: str) -> Dict[str, Any]:
         """

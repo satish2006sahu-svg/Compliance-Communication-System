@@ -17,15 +17,15 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
         email_clean = "employee1@compliance.org"
     user = db.query(User).filter(User.email == email_clean).first()
     
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     valid = verify_password(payload.password, user.hashed_password)
     if not valid:
-        # Also accept standard documentation aliases for smooth academic testing
-        if email_clean == "admin@compliance.org" and payload.password in ("AdminPassword2026!", "Admin@Compliance2026", "admin"):
-            valid = True
-        elif email_clean in ("employee1@compliance.org", "employee2@compliance.org", "employee@compliance.org") and payload.password in ("EmployeePass2026!", "Employee@Compliance2026", "employee"):
-            valid = True
-
-    if not user or not valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",

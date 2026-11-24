@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api } from '../../api/client';
 import StatusBadge from '../../components/StatusBadge';
 import Notification from '../../components/Notification';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 import { 
   Globe, 
   Sparkles, 
@@ -20,7 +21,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 
-export default function AdminDashboard({ onNavigateToHistory, onOpenApiKeyModal }) {
+export default function AdminDashboard({ onNavigateToHistory }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState('');
@@ -36,6 +37,7 @@ export default function AdminDashboard({ onNavigateToHistory, onOpenApiKeyModal 
   const [announcement, setAnnouncement] = useState(null);
   const [announcementTitle, setAnnouncementTitle] = useState('');
   const [announcementContent, setAnnouncementContent] = useState('');
+  const [announcementViewMode, setAnnouncementViewMode] = useState('edit'); // 'edit' or 'preview'
   const [isGeneratingAnn, setIsGeneratingAnn] = useState(false);
 
   // FAQs State
@@ -240,16 +242,9 @@ export default function AdminDashboard({ onNavigateToHistory, onOpenApiKeyModal 
             message={notification.message}
             onClose={() => setNotification(null)}
           />
-          {notification.isKeyMissing && onOpenApiKeyModal && (
-            <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-900">
-              <span>Need to set your Firecrawl or LLM API keys? Configure them directly in the browser.</span>
-              <button
-                type="button"
-                onClick={onOpenApiKeyModal}
-                className="px-3 py-1.5 bg-navy-dark text-white rounded-lg font-bold hover:bg-navy-secondary transition-colors whitespace-nowrap"
-              >
-                ⚙️ Configure API Keys
-              </button>
+          {notification.isKeyMissing && (
+            <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-900">
+              <span>Firecrawl or LLM API keys are missing. Configure <code className="font-mono font-bold bg-amber-100 px-1 py-0.5 rounded">FIRECRAWL_API_KEY</code> and <code className="font-mono font-bold bg-amber-100 px-1 py-0.5 rounded">GEMINI_API_KEY</code> directly in <code className="font-mono font-bold bg-amber-100 px-1 py-0.5 rounded">backend/.env</code>.</span>
             </div>
           )}
         </div>
@@ -501,15 +496,48 @@ export default function AdminDashboard({ onNavigateToHistory, onOpenApiKeyModal 
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-navy-secondary uppercase tracking-wider mb-1.5">
-                  Announcement Body (Markdown)
-                </label>
-                <textarea
-                  rows={14}
-                  value={announcementContent}
-                  onChange={(e) => setAnnouncementContent(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm text-text-primary font-mono focus:ring-2 focus:ring-teal-accent outline-none leading-relaxed"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-navy-secondary uppercase tracking-wider">
+                    Announcement Body
+                  </label>
+                  <div className="flex rounded-lg bg-gray-100 p-0.5 border border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setAnnouncementViewMode('edit')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                        announcementViewMode === 'edit'
+                          ? 'bg-white text-navy-dark shadow-xs'
+                          : 'text-text-secondary hover:text-navy-dark'
+                      }`}
+                    >
+                      Raw Markdown
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAnnouncementViewMode('preview')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                        announcementViewMode === 'preview'
+                          ? 'bg-teal-accent text-navy-dark shadow-xs'
+                          : 'text-text-secondary hover:text-navy-dark'
+                      }`}
+                    >
+                      Formatted Preview
+                    </button>
+                  </div>
+                </div>
+
+                {announcementViewMode === 'edit' ? (
+                  <textarea
+                    rows={14}
+                    value={announcementContent}
+                    onChange={(e) => setAnnouncementContent(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-xl text-sm text-text-primary font-mono focus:ring-2 focus:ring-teal-accent outline-none leading-relaxed"
+                  />
+                ) : (
+                  <div className="w-full min-h-[300px] max-h-[500px] overflow-y-auto px-5 py-4 bg-gray-50/70 border border-gray-300 rounded-xl">
+                    <MarkdownRenderer content={announcementContent} />
+                  </div>
+                )}
               </div>
 
               {/* FAQs Section */}

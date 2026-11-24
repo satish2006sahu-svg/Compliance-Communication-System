@@ -3,14 +3,35 @@ import re
 from pathlib import Path
 from pydantic import BaseModel
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt
+from sqlalchemy.orm import Session
 from app.config import settings, BASE_DIR
+from app.database import get_db
+from app.models import User
 from app.security import require_admin
 from app.services.firecrawl_service import firecrawl_service
 from app.services.llm_service import llm_service
 from app.services.memento_service import memento_service
 
 router = APIRouter(prefix="/system", tags=["System & Health"])
+optional_bearer = HTTPBearer(auto_error=False)
+
+def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(optional_bearer),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    if not credentials:
+        return None
+    try:
+        payload = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id:
+            return db.query(User).filter(User.id == int(user_id)).first()
+    except Exception:
+        pass
+    return None
 
 class ConfigUpdateRequest(BaseModel):
     firecrawl_api_key: Optional[str] = None
@@ -39,8 +60,14 @@ def _update_env_file(updates: dict):
     for var_name, value in updates.items():
         if value is None:
             continue
+        # Validate var_name against injection
+        if not re.match(r"^[A-Z0-9_]+$", var_name):
+            continue
+        clean_val = str(value).strip().replace("\r", "").replace("\n", "")
+        clean_val = clean_val.replace('"', '\\"')
+
         pattern = rf"^{var_name}=.*$"
-        new_line = f'{var_name}="{value}"'
+        new_line = f'{var_name}="{clean_val}"'
         if re.search(pattern, content, flags=re.MULTILINE):
             content = re.sub(pattern, new_line, content, flags=re.MULTILINE)
         else:
@@ -50,9 +77,10 @@ def _update_env_file(updates: dict):
         f.write(content)
 
 @router.get("/status")
-def get_system_status():
+def get_system_status(current_user: Optional[User] = Depends(get_optional_user)):
     """
     Returns system status, active integrations, and configuration checks.
+    Public callers receive health status; logged-in administrators receive full integration diagnostics.
     """
     fc_key = firecrawl_service.active_api_key
     gemini_key = llm_service.active_gemini_key
@@ -67,12 +95,11 @@ def get_system_status():
     memento_dir = memento_service.storage_dir
     memento_ok = memento_dir.exists() and os.access(memento_dir, os.W_OK)
     
-    return {
+    status_info = {
         "status": "healthy",
         "version": settings.VERSION,
         "firecrawl": {
             "configured": has_firecrawl,
-            "masked_key": _mask_key(fc_key),
             "base_url": settings.FIRECRAWL_BASE_URL
         },
         "llm": {
@@ -80,17 +107,23 @@ def get_system_status():
             "active_provider": active_llm,
             "gemini_configured": has_gemini,
             "gemini_model": llm_service.active_gemini_model,
-            "gemini_masked": _mask_key(gemini_key),
             "openai_configured": has_openai,
-            "openai_masked": _mask_key(openai_key)
         },
         "memento": {
             "configured": True,
-            "storage_directory": str(memento_dir),
             "healthy": memento_ok,
             "embedding_provider": settings.MEMENTO_EMBEDDING_PROVIDER
         }
     }
+
+    # Only expose sensitive masked keys and storage paths if authenticated as Admin
+    if current_user and current_user.role == "admin":
+        status_info["firecrawl"]["masked_key"] = _mask_key(fc_key)
+        status_info["llm"]["gemini_masked"] = _mask_key(gemini_key)
+        status_info["llm"]["openai_masked"] = _mask_key(openai_key)
+        status_info["memento"]["storage_directory"] = str(memento_dir)
+
+    return status_info
 
 @router.post("/config")
 def update_system_config(
@@ -98,65 +131,10 @@ def update_system_config(
     admin=Depends(require_admin)
 ):
     """
-    Allows administrator to update API keys dynamically without restarting the server.
-    Updates in-memory settings and persists to backend/.env.
+    In-browser API key modification is disabled for enterprise security.
+    Credentials must be configured directly on the server in backend/.env.
     """
-    updates = {}
-    
-    if payload.firecrawl_api_key is not None:
-        key = payload.firecrawl_api_key.strip()
-        settings.FIRECRAWL_API_KEY = key
-        firecrawl_service.api_key = key
-        os.environ["FIRECRAWL_API_KEY"] = key
-        updates["FIRECRAWL_API_KEY"] = key
-        
-    if payload.gemini_api_key is not None:
-        key = payload.gemini_api_key.strip()
-        settings.GEMINI_API_KEY = key
-        llm_service.gemini_key = key
-        os.environ["GEMINI_API_KEY"] = key
-        updates["GEMINI_API_KEY"] = key
-        if key:
-            settings.LLM_PROVIDER = "gemini"
-            llm_service.provider = "gemini"
-            os.environ["LLM_PROVIDER"] = "gemini"
-            updates["LLM_PROVIDER"] = "gemini"
-
-    if payload.gemini_model is not None:
-        m = payload.gemini_model.strip()
-        if m:
-            settings.GEMINI_MODEL = m
-            llm_service.gemini_model = m
-            os.environ["GEMINI_MODEL"] = m
-            updates["GEMINI_MODEL"] = m
-
-    if payload.openai_api_key is not None:
-        key = payload.openai_api_key.strip()
-        settings.OPENAI_API_KEY = key
-        llm_service.openai_key = key
-        os.environ["OPENAI_API_KEY"] = key
-        updates["OPENAI_API_KEY"] = key
-        if key and not settings.GEMINI_API_KEY:
-            settings.LLM_PROVIDER = "openai"
-            llm_service.provider = "openai"
-            os.environ["LLM_PROVIDER"] = "openai"
-            updates["LLM_PROVIDER"] = "openai"
-
-    if payload.llm_provider is not None:
-        p = payload.llm_provider.strip().lower()
-        if p in ("gemini", "openai"):
-            settings.LLM_PROVIDER = p
-            llm_service.provider = p
-            os.environ["LLM_PROVIDER"] = p
-            updates["LLM_PROVIDER"] = p
-
-    # Persist to .env
-    try:
-        _update_env_file(updates)
-    except Exception as e:
-        print(f"Warning writing to .env: {e}")
-
-    return {
-        "message": "API keys and configuration successfully updated and applied in real time.",
-        "status": get_system_status()
-    }
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="In-browser API key configuration has been disabled for enterprise security. Please configure API credentials directly in backend/.env on the server."
+    )

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../api/client';
 import { CheckCircle2, AlertTriangle, RefreshCw, Key, Brain, Sparkles, Database, Shield } from 'lucide-react';
 
-export default function SystemStatus({ onOpenApiKeyModal }) {
+export default function SystemStatus() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,18 +32,9 @@ export default function SystemStatus({ onOpenApiKeyModal }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {onOpenApiKeyModal && (
-            <button
-              onClick={onOpenApiKeyModal}
-              className="px-3.5 py-2 rounded-xl bg-teal-accent hover:bg-teal-hover text-navy-dark font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all"
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>Configure API Keys</span>
-            </button>
-          )}
           <button
             onClick={fetchStatus}
-            className="px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-text-secondary hover:text-navy-dark hover:bg-gray-50 flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl border border-gray-200 text-xs font-semibold text-text-secondary hover:text-navy-dark hover:bg-gray-50 flex items-center gap-1.5 transition-all"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Refresh Status</span>

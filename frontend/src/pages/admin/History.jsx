@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/client';
 import StatusBadge from '../../components/StatusBadge';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 import { FileText, Globe, ExternalLink, Calendar, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
 
 export default function History() {
@@ -165,8 +166,8 @@ export default function History() {
                       <h4 className="text-sm font-bold text-navy-dark">{ann.title}</h4>
                       <StatusBadge status={ann.status} />
                     </div>
-                    <div className="text-xs text-text-primary whitespace-pre-wrap font-sans bg-white p-3 rounded-lg border border-gray-200/80 max-h-60 overflow-y-auto leading-relaxed">
-                      {ann.content}
+                    <div className="text-xs text-text-primary bg-white p-3.5 rounded-lg border border-gray-200/80 max-h-64 overflow-y-auto leading-relaxed">
+                      <MarkdownRenderer content={ann.content} />
                     </div>
 
                     {ann.faqs && ann.faqs.length > 0 && (

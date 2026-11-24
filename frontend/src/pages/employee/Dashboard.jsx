@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 import { 
   BookOpen, 
   Calendar, 
@@ -103,8 +104,8 @@ export default function EmployeeDashboard({ onOpenChatbot }) {
 
               <h2 className="text-xl font-bold text-navy-dark mb-2">{latest.title}</h2>
 
-              <div className="text-xs text-text-primary line-clamp-4 whitespace-pre-wrap leading-relaxed font-sans text-slate-700 bg-gray-50/70 p-4 rounded-xl border border-gray-200/70 mb-4">
-                {latest.content}
+              <div className="text-xs text-text-primary max-h-56 overflow-y-auto leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-200/70 mb-4">
+                <MarkdownRenderer content={latest.content} />
               </div>
 
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100">
@@ -252,8 +253,8 @@ export default function EmployeeDashboard({ onOpenChatbot }) {
               </button>
             </div>
 
-            <div className="text-xs text-text-primary whitespace-pre-wrap leading-relaxed font-sans bg-gray-50/70 p-4 rounded-xl border border-gray-200 max-h-96 overflow-y-auto">
-              {selectedAnnouncement.content}
+            <div className="text-xs text-text-primary leading-relaxed bg-gray-50/70 p-4 rounded-xl border border-gray-200 max-h-96 overflow-y-auto">
+              <MarkdownRenderer content={selectedAnnouncement.content} />
             </div>
 
             {selectedAnnouncement.faqs && selectedAnnouncement.faqs.length > 0 && (

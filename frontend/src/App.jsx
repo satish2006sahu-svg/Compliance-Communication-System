@@ -9,13 +9,11 @@ import SystemStatus from './pages/admin/SystemStatus';
 import EmployeeDashboard from './pages/employee/Dashboard';
 import FaqsView from './pages/employee/FaqsView';
 import Chatbot from './pages/employee/Chatbot';
-import ApiKeyModal from './components/ApiKeyModal';
 
 function MainApp() {
   const { user, loading, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [chatbotQuery, setChatbotQuery] = useState('');
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
 
   if (loading) {
     return (
@@ -37,7 +35,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-bg-light flex flex-col font-sans">
-      <Navbar onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
+      <Navbar />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
         
@@ -48,11 +46,10 @@ function MainApp() {
                 {activeTab === 'dashboard' && (
                   <AdminDashboard
                     onNavigateToHistory={() => setActiveTab('history')}
-                    onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
                   />
                 )}
                 {activeTab === 'history' && <History />}
-                {activeTab === 'system' && <SystemStatus onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />}
+                {activeTab === 'system' && <SystemStatus />}
               </>
             ) : (
               <>
@@ -64,11 +61,6 @@ function MainApp() {
           </div>
         </main>
       </div>
-
-      <ApiKeyModal
-        isOpen={isApiKeyModalOpen}
-        onClose={() => setIsApiKeyModalOpen(false)}
-      />
     </div>
   );
 }

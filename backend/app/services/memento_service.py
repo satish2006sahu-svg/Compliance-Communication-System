@@ -86,8 +86,15 @@ class MementoService:
     def __init__(self):
         self.storage_dir = Path(settings.MEMENTO_STORAGE_DIR)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
-        self._lock = threading.Lock()
+        self._locks = {}
+        self._meta_lock = threading.Lock()
         
+    def _get_employee_lock(self, employee_id: int) -> threading.Lock:
+        with self._meta_lock:
+            if employee_id not in self._locks:
+                self._locks[employee_id] = threading.Lock()
+            return self._locks[employee_id]
+
     def _get_employee_db_path(self, employee_id: int) -> Path:
         """Returns the isolated database file path for a specific employee."""
         return self.storage_dir / f"memento_employee_{employee_id}.db"
@@ -148,7 +155,7 @@ class MementoService:
         """
         Ingests a conversational interaction into the employee's Memento persistent memory.
         """
-        with self._lock:
+        with self._get_employee_lock(employee_id):
             store = self._get_memento_store(employee_id)
             try:
                 # Ingest employee question
@@ -181,7 +188,7 @@ class MementoService:
         """
         Recalls persistent memories relevant to the query for the authenticated employee.
         """
-        with self._lock:
+        with self._get_employee_lock(employee_id):
             db_path = self._get_employee_db_path(employee_id)
             if not db_path.exists():
                 return ""
@@ -221,7 +228,7 @@ class MementoService:
         """
         Retrieves the employee's raw past conversation entries from their isolated Memento database.
         """
-        with self._lock:
+        with self._get_employee_lock(employee_id):
             db_path = self._get_employee_db_path(employee_id)
             if not db_path.exists():
                 return []
@@ -229,10 +236,10 @@ class MementoService:
             store = self._get_memento_store(employee_id)
             history = []
             try:
-                cursor = store._db.execute(
-                    "SELECT text, timestamp FROM verbatim_chunks ORDER BY rowid ASC LIMIT ?",
-                    (limit,)
-                )
+                cols = [row[1] for row in store._db.execute("PRAGMA table_info(verbatim_chunks)").fetchall()]
+                has_time = "timestamp" in cols
+                query_sql = "SELECT text, timestamp FROM verbatim_chunks ORDER BY rowid ASC LIMIT ?" if has_time else "SELECT text, NULL FROM verbatim_chunks ORDER BY rowid ASC LIMIT ?"
+                cursor = store._db.execute(query_sql, (limit,))
                 rows = cursor.fetchall()
                 for text_val, timestamp_val in rows:
                     if text_val.startswith("Employee asked: "):

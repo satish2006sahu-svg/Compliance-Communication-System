@@ -1,8 +1,8 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, LogOut, Key, Settings } from 'lucide-react';
+import { ShieldCheck, LogOut } from 'lucide-react';
 
-export default function Navbar({ onOpenApiKeyModal }) {
+export default function Navbar() {
   const { user, logout, isAdmin } = useAuth();
 
   return (
@@ -23,18 +23,6 @@ export default function Navbar({ onOpenApiKeyModal }) {
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4">
-        {/* Administrator API Key Configuration Button */}
-        {isAdmin && onOpenApiKeyModal && (
-          <button
-            onClick={onOpenApiKeyModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-navy-dark bg-teal-light hover:bg-teal-hover hover:text-white transition-all border border-teal-accent/30 shadow-2xs"
-            title="Configure Firecrawl & LLM API Keys"
-          >
-            <Key className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">API Keys</span>
-          </button>
-        )}
-
         {/* User Badge */}
         <div className="flex items-center gap-3 pl-3 sm:pl-4 border-l border-gray-200">
           <div className="text-right hidden sm:block">
