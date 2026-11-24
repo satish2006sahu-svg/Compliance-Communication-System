@@ -8,6 +8,13 @@ import httpx
 from fastapi import HTTPException
 from app.config import settings
 
+# Inject system certificate store to trust local Windows roots (e.g. Avast, corporate firewalls)
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except Exception:
+    pass
+
 try:
     from firecrawl import FirecrawlApp
 except ImportError:
@@ -137,36 +144,46 @@ class FirecrawlService:
                 "onlyMainContent": True
             }
             try:
-                with httpx.Client(timeout=45.0) as client:
-                    resp = client.post(endpoint, json=payload, headers=headers)
-                    if resp.status_code == 401 or resp.status_code == 403:
-                        raise HTTPException(
-                            status_code=401,
-                            detail="Firecrawl API authentication failed. Please verify that FIRECRAWL_API_KEY is valid."
-                        )
-                    elif resp.status_code == 429:
-                        raise HTTPException(
-                            status_code=429,
-                            detail="Firecrawl API rate limit exceeded or credit quota exhausted. Please check your Firecrawl account."
-                        )
-                    elif resp.status_code != 200:
-                        detail_text = resp.text
-                        try:
-                            err_json = resp.json()
-                            detail_text = err_json.get("error", detail_text)
-                        except Exception:
-                            pass
-                        raise HTTPException(
-                            status_code=resp.status_code,
-                            detail=f"Firecrawl scraping error ({resp.status_code}): {detail_text}"
-                        )
-                    
-                    data = resp.json()
-                    scraped_data = data.get("data", {})
-                    content = scraped_data.get("markdown", "") or scraped_data.get("html", "")
-                    meta = scraped_data.get("metadata", {})
-                    title = meta.get("title") or meta.get("ogTitle") or ""
-                    meta_dict = meta
+                try:
+                    with httpx.Client(timeout=45.0) as client:
+                        resp = client.post(endpoint, json=payload, headers=headers)
+                except (httpx.ConnectError, httpx.RequestError) as net_err:
+                    err_str = str(net_err).lower()
+                    if "certificate verify failed" in err_str or "certificate_verify_failed" in err_str:
+                        # Fallback for Windows environments with intercepting antivirus / corporate proxies (e.g. Avast, Zscaler)
+                        with httpx.Client(verify=False, timeout=45.0) as client:
+                            resp = client.post(endpoint, json=payload, headers=headers)
+                    else:
+                        raise net_err
+
+                if resp.status_code == 401 or resp.status_code == 403:
+                    raise HTTPException(
+                        status_code=401,
+                        detail="Firecrawl API authentication failed. Please verify that FIRECRAWL_API_KEY is valid."
+                    )
+                elif resp.status_code == 429:
+                    raise HTTPException(
+                        status_code=429,
+                        detail="Firecrawl API rate limit exceeded or credit quota exhausted. Please check your Firecrawl account."
+                    )
+                elif resp.status_code != 200:
+                    detail_text = resp.text
+                    try:
+                        err_json = resp.json()
+                        detail_text = err_json.get("error", detail_text)
+                    except Exception:
+                        pass
+                    raise HTTPException(
+                        status_code=resp.status_code,
+                        detail=f"Firecrawl scraping error ({resp.status_code}): {detail_text}"
+                    )
+                
+                data = resp.json()
+                scraped_data = data.get("data", {})
+                content = scraped_data.get("markdown", "") or scraped_data.get("html", "")
+                meta = scraped_data.get("metadata", {})
+                title = meta.get("title") or meta.get("ogTitle") or ""
+                meta_dict = meta
             except httpx.RequestError as exc:
                 raise HTTPException(
                     status_code=502,
