@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -14,6 +15,8 @@ function MainApp() {
   const { user, loading, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [chatbotQuery, setChatbotQuery] = useState('');
+  const [authView, setAuthView] = useState('landing'); // 'landing' or 'login'
+  const [loginRole, setLoginRole] = useState('admin');
 
   if (loading) {
     return (
@@ -25,7 +28,22 @@ function MainApp() {
   }
 
   if (!user) {
-    return <Login />;
+    if (authView === 'login') {
+      return (
+        <Login 
+          initialRole={loginRole} 
+          onBackToLanding={() => setAuthView('landing')} 
+        />
+      );
+    }
+    return (
+      <LandingPage 
+        onSelectLogin={(role) => {
+          setLoginRole(role || 'admin');
+          setAuthView('login');
+        }} 
+      />
+    );
   }
 
   const handleOpenChatbot = (query = '') => {

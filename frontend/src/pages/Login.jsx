@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ShieldCheck, UserCheck, Lock, Mail, ArrowRight, AlertCircle, Sparkles, Building2, User } from 'lucide-react';
+import { ShieldCheck, UserCheck, Lock, Mail, ArrowRight, AlertCircle, Sparkles, Building2, User, ArrowLeft } from 'lucide-react';
 
-export default function Login() {
+export default function Login({ onBackToLanding, initialRole = 'admin' }) {
   const { login } = useAuth();
-  const [role, setRole] = useState('admin'); // 'admin' or 'employee'
-  const [email, setEmail] = useState('admin@compliance.org');
-  const [password, setPassword] = useState('AdminPassword2026!');
+  const [role, setRole] = useState(initialRole); // 'admin' or 'employee'
+  const [email, setEmail] = useState(initialRole === 'admin' ? 'admin@compliance.org' : 'employee1@compliance.org');
+  const [password, setPassword] = useState(initialRole === 'admin' ? 'AdminPassword2026!' : 'EmployeePass2026!');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (initialRole) {
+      handleRoleSwitch(initialRole);
+    }
+  }, [initialRole]);
 
   const handleRoleSwitch = (selectedRole) => {
     setRole(selectedRole);
@@ -39,7 +45,18 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-light flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-bg-light flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
+      {onBackToLanding && (
+        <div className="sm:mx-auto sm:w-full sm:max-w-md mb-4 px-4 sm:px-0">
+          <button
+            onClick={onBackToLanding}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-navy-dark transition-colors py-1 px-2.5 rounded-lg hover:bg-gray-100"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Back to Product Overview</span>
+          </button>
+        </div>
+      )}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Brand Icon & Heading */}
         <div className="flex justify-center mb-3">
