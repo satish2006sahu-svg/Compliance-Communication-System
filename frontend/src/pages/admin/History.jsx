@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../../api/client';
 import StatusBadge from '../../components/StatusBadge';
 import MarkdownRenderer from '../../components/MarkdownRenderer';
-import { FileText, Globe, ExternalLink, Calendar, CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { FileText, Globe, ExternalLink, Calendar, CheckCircle, Clock, AlertCircle, RefreshCw, Trash2, AlertTriangle } from 'lucide-react';
 
 export default function History() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -40,6 +42,52 @@ export default function History() {
     }
   };
 
+  const handleDeleteDocument = async (docId, docTitle) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this regulatory record?\n\n"${docTitle}"\n\nThis will permanently delete the circular, its AI summary, all draft and published announcements, and attached FAQs.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(docId);
+    setError('');
+    setSuccessMsg('');
+    try {
+      await api.deleteDocument(docId);
+      setSuccessMsg(`Successfully deleted regulatory update: "${docTitle}".`);
+      if (selectedDoc?.document?.id === docId) {
+        setSelectedDoc(null);
+      }
+      await fetchDocuments();
+    } catch (err) {
+      setError(`Failed to delete document: ${err.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (announcementId, annTitle) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete this announcement?\n\n"${annTitle}"\n\nIf this announcement was published, it will be immediately removed from the Employee Portal and AI Chatbot.`
+    );
+    if (!confirmed) return;
+
+    setError('');
+    setSuccessMsg('');
+    try {
+      await api.deleteAnnouncement(announcementId);
+      setSuccessMsg(`Successfully deleted announcement #${announcementId}.`);
+      if (selectedDoc) {
+        setSelectedDoc({
+          ...selectedDoc,
+          announcements: selectedDoc.announcements.filter(a => a.id !== announcementId)
+        });
+      }
+      await fetchDocuments();
+    } catch (err) {
+      setError(`Failed to delete announcement: ${err.message}`);
+    }
+  };
+
   return (
     <div className="space-y-6 fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -57,6 +105,16 @@ export default function History() {
           Refresh
         </button>
       </div>
+
+      {successMsg && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-status-success font-medium flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{successMsg}</span>
+          </div>
+          <button onClick={() => setSuccessMsg('')} className="text-emerald-700 hover:text-emerald-900 font-bold text-xs">✕</button>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-status-error font-medium flex items-center gap-2">
@@ -88,7 +146,7 @@ export default function History() {
                   <th className="py-3.5 px-4">Source URL</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4">Scraped On</th>
-                  <th className="py-3.5 px-4 text-right">Action</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium text-text-primary">
@@ -115,12 +173,26 @@ export default function History() {
                       {new Date(doc.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => handleViewDetail(doc.id)}
-                        className="px-3 py-1.5 rounded-lg bg-navy-secondary text-white hover:bg-navy-dark text-xs font-semibold transition-colors"
-                      >
-                        View Details
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleViewDetail(doc.id)}
+                          className="px-3 py-1.5 rounded-lg bg-navy-secondary text-white hover:bg-navy-dark text-xs font-semibold transition-colors"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id, doc.title)}
+                          disabled={deletingId === doc.id}
+                          title="Delete Processed Regulatory Update"
+                          className="p-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                        >
+                          {deletingId === doc.id ? (
+                            <div className="w-3.5 h-3.5 border-2 border-red-500/30 border-t-red-600 rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -164,7 +236,17 @@ export default function History() {
                   <div key={ann.id} className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-bold text-navy-dark">{ann.title}</h4>
-                      <StatusBadge status={ann.status} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={ann.status} />
+                        <button
+                          onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                          className="px-2 py-1 rounded-md text-[11px] font-bold text-red-600 hover:bg-red-100/60 border border-red-200 flex items-center gap-1 transition-all"
+                          title="Delete this announcement"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete {ann.status === 'published' ? 'Published' : 'Draft'}</span>
+                        </button>
+                      </div>
                     </div>
                     <div className="text-xs text-text-primary bg-white p-3.5 rounded-lg border border-gray-200/80 max-h-64 overflow-y-auto leading-relaxed">
                       <MarkdownRenderer content={ann.content} />
@@ -190,7 +272,14 @@ export default function History() {
               <p className="text-xs text-text-secondary italic">No announcement generated yet for this document.</p>
             )}
 
-            <div className="flex justify-end pt-3 border-t border-gray-100">
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              <button
+                onClick={() => handleDeleteDocument(selectedDoc.document.id, selectedDoc.document.title)}
+                className="px-3.5 py-2 rounded-xl text-red-600 hover:bg-red-50 border border-red-200 hover:border-red-300 font-semibold text-xs flex items-center gap-1.5 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Processed Update</span>
+              </button>
               <button
                 onClick={() => setSelectedDoc(null)}
                 className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-text-primary font-semibold text-xs"

@@ -225,6 +225,33 @@ export default function AdminDashboard({ onNavigateToHistory }) {
     }
   };
 
+  const handleDeleteCurrentAnnouncement = async () => {
+    if (!announcement) return;
+    const isPublished = announcement.status === 'published';
+    const confirmed = window.confirm(
+      isPublished 
+        ? `Are you sure you want to delete this published announcement?\n\nIt will be immediately removed from the Employee Portal and AI Chatbot.`
+        : `Are you sure you want to delete this draft announcement?`
+    );
+    if (!confirmed) return;
+
+    try {
+      if (announcement.id) {
+        await api.deleteAnnouncement(announcement.id);
+      }
+      setAnnouncement(null);
+      setAnnouncementTitle('');
+      setAnnouncementContent('');
+      setFaqs([]);
+      setNotification({
+        type: 'info',
+        message: `Announcement #${announcement.id || ''} was successfully deleted.`
+      });
+    } catch (err) {
+      setNotification({ type: 'error', message: `Delete failed: ${err.message}` });
+    }
+  };
+
   return (
     <div className="space-y-8 fade-in">
       {/* Header */}
@@ -619,7 +646,18 @@ export default function AdminDashboard({ onNavigateToHistory }) {
                   {announcement.status === 'published' && ' (Live on Employee Portal)'}
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={handleDeleteCurrentAnnouncement}
+                    disabled={isSaving}
+                    className="px-4 py-2.5 rounded-xl border border-red-200 hover:bg-red-50 text-red-600 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                    title="Delete this announcement / draft"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete {announcement.status === 'published' ? 'Published Update' : 'Draft'}</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={handleSaveDraft}

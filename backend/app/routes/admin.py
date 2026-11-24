@@ -326,3 +326,50 @@ def get_document_detail(
         "analysis": analysis,
         "announcements": [AnnouncementResponse.model_validate(a) for a in announcements]
     }
+
+@router.delete("/announcements/{announcement_id}")
+def delete_announcement(
+    announcement_id: int,
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Administrator endpoint:
+    Deletes an announcement (draft, pending, or published) and its associated FAQs.
+    If the announcement was published, it is immediately revoked from the Employee Portal.
+    """
+    announcement = db.query(Announcement).filter(Announcement.id == announcement_id).first()
+    if not announcement:
+        raise HTTPException(status_code=404, detail="Announcement not found")
+        
+    db.delete(announcement)
+    db.commit()
+    
+    return {
+        "message": f"Announcement #{announcement_id} successfully deleted.",
+        "deleted_id": announcement_id
+    }
+
+@router.delete("/documents/{doc_id}")
+def delete_regulatory_document(
+    doc_id: int,
+    current_admin: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Administrator endpoint:
+    Deletes a processed regulatory document, including all of its generated announcements,
+    drafts, and attached FAQs (via database cascade).
+    """
+    doc = db.query(RegulatoryDocument).filter(RegulatoryDocument.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Regulatory document not found")
+        
+    doc_title = doc.title
+    db.delete(doc)
+    db.commit()
+    
+    return {
+        "message": f"Regulatory document #{doc_id} ('{doc_title}') and all associated updates successfully deleted.",
+        "deleted_id": doc_id
+    }

@@ -75,6 +75,12 @@ export const api = {
   publishAnnouncement: (announcementId) => apiRequest(`/admin/announcements/${announcementId}/publish`, {
     method: 'POST'
   }),
+  deleteAnnouncement: (announcementId) => apiRequest(`/admin/announcements/${announcementId}`, {
+    method: 'DELETE'
+  }),
+  deleteDocument: (docId) => apiRequest(`/admin/documents/${docId}`, {
+    method: 'DELETE'
+  }),
   listDocuments: () => apiRequest('/admin/documents'),
   getDocumentDetail: (docId) => apiRequest(`/admin/documents/${docId}`),
 

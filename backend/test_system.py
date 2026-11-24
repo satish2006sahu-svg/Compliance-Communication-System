@@ -167,9 +167,36 @@ def run_tests():
     assert "TOP SECRET UNAPPROVED DRAFT" not in all_titles, "SECURITY BREACH: Draft announcement leaked to employee dashboard!"
     print("✓ Published-Only Guarantee verified: Employees cannot see draft or unapproved updates")
 
-    # Clean up draft
-    db.delete(draft_ann)
+    print("\n[TEST 9] Testing Administrator Delete Privileges (Draft & Published Deletion)...")
+    # 1. Create a test announcement to delete
+    test_del_ann = Announcement(
+        document_id=1,
+        title="Temporary Delete Test Directive",
+        content="This will be deleted.",
+        status="published"
+    )
+    db.add(test_del_ann)
     db.commit()
+    db.refresh(test_del_ann)
+    ann_id = test_del_ann.id
+
+    # 2. Employee attempt to delete -> Must be 403 Forbidden
+    emp_del_res = client.delete(f"/api/admin/announcements/{ann_id}", headers={
+        "Authorization": f"Bearer {emp_token}"
+    })
+    assert emp_del_res.status_code == 403, f"Security failure: Employee could delete announcement! {emp_del_res.status_code}"
+
+    # 3. Admin attempt to delete -> Must be 200 OK
+    admin_del_res = client.delete(f"/api/admin/announcements/{ann_id}", headers={
+        "Authorization": f"Bearer {admin_token}"
+    })
+    assert admin_del_res.status_code == 200, f"Admin delete failed: {admin_del_res.status_code}"
+    
+    # 4. Verify gone from database
+    check_ann = db.query(Announcement).filter(Announcement.id == ann_id).first()
+    assert check_ann is None, "Announcement was not deleted from database!"
+    print("✓ Administrator Delete Privileges verified: Employees blocked (403) and Admin can delete published updates")
+
     db.close()
 
     print("\n" + "=" * 70)
