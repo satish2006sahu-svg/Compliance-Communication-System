@@ -192,7 +192,7 @@ The business logic is encapsulated in three singleton service classes:
 ```
 app/services/
 ├── firecrawl_service.py  ──> Scrapes web pages into Markdown & enforces SSRF rules
-├── llm_service.py        ──> Orchestrates Gemini 2.5 Flash for summarization & RAG
+├── llm_service.py        ──> Orchestrates Gemini 3.8 Flash for summarization & RAG
 └── memento_service.py    ──> Manages per-employee bitemporal memory graphs
 ```
 
@@ -220,7 +220,7 @@ app/services/
 
 #### Key Methods:
 - **`analyze_regulatory_text(content: str, source_url: str) -> Dict[str, Any]`:**  
-  Prompts Gemini 2.5 Flash with a strict schema to extract:
+  Prompts Gemini 3.8 Flash with a strict schema to extract:
   - `issuing_authority` (e.g. "Reserve Bank of India")
   - `effective_date` and `compliance_deadlines`
   - `impacted_departments` (`IT`, `Credit/Loans`, `Risk`, `Operations`)

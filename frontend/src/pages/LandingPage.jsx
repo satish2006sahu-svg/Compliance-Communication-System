@@ -50,7 +50,7 @@ export default function LandingPage({ onSelectLogin }) {
     {
       id: 'llm',
       tag: 'Step 2 • AI Intelligence',
-      title: 'Gemini 2.5 Flash Structured Legal Distillation',
+      title: 'Gemini 3.8 Flash Structured Legal Distillation',
       subtitle: 'Ingest massive master directions in a single 1M-token prompt. Extract deadlines, statutory penalties, and affected departments without chunk fragmentation.',
       badgeColor: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
       accentGlow: 'from-blue-500/20 via-indigo-500/10 to-transparent',
@@ -60,7 +60,7 @@ export default function LandingPage({ onSelectLogin }) {
         { label: 'Hallucination', value: 'Zero-Tolerance' }
       ],
       previewType: 'analysis',
-      urlPreview: 'AI Legal Extractor • Google Gemini 2.5 Flash',
+      urlPreview: 'AI Legal Extractor • Google Gemini 3.8 Flash',
       highlights: [
         'Translates complex statutory legalese into plain English',
         'Categorizes action items by department (IT, Operations, Risk)',
@@ -420,7 +420,7 @@ export default function LandingPage({ onSelectLogin }) {
                       <div className="flex items-center justify-between p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/50">
                         <div className="flex items-center gap-2.5">
                           <Cpu className="w-5 h-5 text-blue-400" />
-                          <span className="text-xs font-bold text-white">Google Gemini 2.5 Flash Structured Synthesis</span>
+                          <span className="text-xs font-bold text-white">Google Gemini 3.8 Flash Structured Synthesis</span>
                         </div>
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">
                           1,048,576 Token Context
@@ -573,7 +573,7 @@ export default function LandingPage({ onSelectLogin }) {
             <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">
               <Sparkles className="w-6 h-6" />
             </div>
-            <h4 className="text-base font-bold text-white">Google Gemini 2.5 Flash</h4>
+            <h4 className="text-base font-bold text-white">Google Gemini 3.8 Flash</h4>
             <p className="text-xs text-slate-400 leading-relaxed">
               Massive 1,000,000+ token context window swallows entire 80-page master circulars in one prompt. Zero chunk fragmentation or lost cross-references.
             </p>

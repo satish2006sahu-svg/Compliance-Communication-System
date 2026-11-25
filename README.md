@@ -153,7 +153,7 @@ flowchart TD
 
     subgraph EXT["External Services"]
         FC["Firecrawl API\n(api.firecrawl.dev)"]
-        LLM["Configured LLM API\n(Gemini 2.5 Flash / GPT-4o-mini)"]
+        LLM["Configured LLM API\n(Gemini 3.8 Flash / GPT-4o-mini)"]
     end
 
     AL --> AUTH

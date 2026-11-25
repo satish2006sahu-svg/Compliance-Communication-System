@@ -342,7 +342,7 @@ def build_pdf(filename="ReguComply_AI_Project_Manual.pdf"):
     story.append(Paragraph("5.2 LLMService (llm_service.py)", h2_style))
     story.append(Paragraph(
         "<b>Purpose:</b> Powers all AI summarization, analysis, FAQ drafting, and chatbot answering.<br/>"
-        "<b>Core Engine:</b> Uses <b>Google Gemini 2.5 Flash</b> (with OpenAI as an optional fallback). Gemini was chosen for its "
+        "<b>Core Engine:</b> Uses <b>Google Gemini 3.8 Flash</b> (with OpenAI as an optional fallback). Gemini was chosen for its "
         "massive 1,000,000+ token context window, allowing entire 80-page circulars to be processed in a single prompt without chunking.<br/>"
         "<b>Key Methods:</b><br/>"
         "• <code>analyze_regulatory_text()</code>: Extracts deadlines, issuing authority, penalty clauses, and affected departments.<br/>"
@@ -394,7 +394,7 @@ def build_pdf(filename="ReguComply_AI_Project_Manual.pdf"):
         [Paragraph("<b>POST /api/auth/login</b>", table_cell), Paragraph("Public", table_cell_bold), Paragraph("Verifies email/password and returns signed JWT token.", table_cell)],
         [Paragraph("<b>GET /api/auth/me</b>", table_cell), Paragraph("Authenticated", table_cell_bold), Paragraph("Returns current user profile and role details.", table_cell)],
         [Paragraph("<b>POST /api/admin/scrape-url</b>", table_cell), Paragraph("Admin Only", table_cell_bold), Paragraph("Validates URL for SSRF, scrapes circular via Firecrawl, returns summary.", table_cell)],
-        [Paragraph("<b>POST /api/admin/announcements</b>", table_cell), Paragraph("Admin Only", table_cell_bold), Paragraph("Generates compliance announcement draft using Gemini 2.5 Flash.", table_cell)],
+        [Paragraph("<b>POST /api/admin/announcements</b>", table_cell), Paragraph("Admin Only", table_cell_bold), Paragraph("Generates compliance announcement draft using Gemini 3.8 Flash.", table_cell)],
         [Paragraph("<b>POST /api/admin/.../publish</b>", table_cell), Paragraph("Admin Only", table_cell_bold), Paragraph("Approves draft announcement and broadcasts it live to employees.", table_cell)],
         [Paragraph("<b>GET /api/employee/directives</b>", table_cell), Paragraph("Employee/Admin", table_cell_bold), Paragraph("Lists all approved, published compliance directives.", table_cell)],
         [Paragraph("<b>GET /api/employee/faqs</b>", table_cell), Paragraph("Employee/Admin", table_cell_bold), Paragraph("Returns searchable list of approved departmental compliance FAQs.", table_cell)],
